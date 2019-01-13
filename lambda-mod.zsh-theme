@@ -3,17 +3,28 @@
 local LAMBDA="%(?,%{$fg_bold[green]%}λ,%{$fg_bold[red]%}λ)"
 if [[ "$USER" == "root" ]]; then USERCOLOR="red"; else USERCOLOR="yellow"; fi
 
+function get_left_prompt() {
+    echo -n $LAMBDA" %{$fg_bold[$USERCOLOR]%}%n"
+    if [[ ! -z "$SSH_CLIENT" ]]; then
+        echo -n "$fg_bold[blue]@%{$reset_color%}"
+        echo -n "$fg_bold[cyan]%}%m"
+    fi
+    echo -n " %{$fg_no_bold[magenta]%}[%3~]"
+    echo -n " $(check_git_prompt_info)"
+    echo -n "%{$reset_color%}"
+}
+
 # Git sometimes goes into a detached head state. git_prompt_info doesn't
 # return anything in this case. So wrap it in another function and check
 # for an empty string.
 function check_git_prompt_info() {
     if git rev-parse --git-dir > /dev/null 2>&1; then
         if [[ -z $(git_prompt_info 2> /dev/null) ]]; then
-            echo "%{$fg[blue]%}detached-head%{$reset_color%}) $(git_prompt_status)
-%{$fg[yellow]%}→ "
+            echo -n "%{$fg[blue]%}detached-head%{$reset_color%}) "
+            echo "$(git_prompt_status)\n%{$fg[yellow]%}→ "
         else
-            echo "$(git_prompt_info 2> /dev/null) $(git_prompt_status)
-%{$fg_bold[cyan]%}→ "
+            echo -n "$(git_prompt_info 2> /dev/null) "
+            echo "$(git_prompt_status)\n%{$fg_bold[cyan]%}→ "
         fi
     else
         echo "%{$fg_bold[cyan]%}→ "
@@ -28,15 +39,10 @@ function get_right_prompt() {
     fi
 }
 
-PS1=$LAMBDA'\
- %{$fg_bold[$USERCOLOR]%}%n@%m\
- %{$fg_no_bold[magenta]%}[%3~]\
- $(check_git_prompt_info)\
-%{$reset_color%}'
-
-PS2="… "
+PS1='$(get_left_prompt)'
 
 RPROMPT='$(get_right_prompt)'
+
 
 # Format for git_prompt_info()
 ZSH_THEME_GIT_PROMPT_PREFIX="at %{$fg[blue]%} "
